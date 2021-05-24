@@ -14,10 +14,10 @@ function transferToWasm(arr: Uint8Array): [number, number] {
  * - **argon2i**: optimized to resist side-channel attacks
  * - **argon2id**: (default) hybrid version
  */
-export const algorithm = {
+export const variant = {
   argon2d: 0,
   argon2i: 1,
-  argon2id: 3,
+  argon2id: 2,
 } as const;
 
 /**
@@ -42,65 +42,69 @@ export interface Argon2Params {
   /**
    * The associated data
    */
-  ad?: Uint8Array;
+  ad: Uint8Array;
   /**
-   * The Argon2 algorithm, see {@link algorithm}
+   * The Argon2 variant, see {@link variant}
    */
-  algorithm?: typeof algorithm[keyof typeof algorithm];
-  /**
-   * Number of iterations, between 1 and (2^32)-1.
-   */
-  timeCost?: number;
+  variant: typeof variant[keyof typeof variant];
   /**
    * Memory size, expressed in kilobytes, between 1 and (2^32)-1.
    */
-  memoryCost?: number;
+  m: number;
   /**
-   * The number of lanes
+   * Number of iterations, between 1 and (2^32)-1.
    */
-  lanes?: number;
+  t: number;
+  /**
+   * Degree of parallelism, between 1 and 255
+   */
+  p: number;
   /**
    * The length of the output in bytes
    */
-  outputLength?: number;
+  outputLength: number;
   /**
    *  The Argon2 version, see {@link version}
    */
-  version?: typeof version[keyof typeof version];
+  version: typeof version[keyof typeof version];
+}
+
+function defaultParams(params?: Partial<Argon2Params>): Argon2Params {
+  return {
+    secret: params?.secret,
+    ad: params?.ad ?? new Uint8Array(),
+    variant: params?.variant ?? variant.argon2id,
+    m: params?.m ?? 4096,
+    t: params?.t ?? 3,
+    p: params?.p ?? 1,
+    outputLength: params?.outputLength ?? 32,
+    version: params?.version ?? version.V0x13,
+  };
 }
 
 /**
- * Computes a hash for the password, salt and parameters
+ * Computes the hash for the password, salt and parameters
  */
 export function hash(
   password: Uint8Array,
   salt: Uint8Array,
-  params?: Argon2Params,
+  partialParams?: Partial<Argon2Params>,
 ): Uint8Array {
-  const secret = params?.secret;
-  const ad = params?.ad ?? new Uint8Array();
-  const alg = params?.algorithm ?? algorithm.argon2id;
-  const timeCost = params?.timeCost ?? 3;
-  const memoryCost = params?.memoryCost ?? 4096;
-  const lanes = params?.lanes ?? 1;
-  const outLen = params?.outputLength ?? 32;
-  const ver = params?.version ?? version.V0x13;
-
-  console.log();
+  const params = defaultParams(partialParams);
 
   const [pwdPtr, pwdLen] = transferToWasm(password);
   const [saltPtr, saltLen] = transferToWasm(salt);
 
   let secretPtr = 0;
   let secretLen = 0;
-  if (secret !== undefined) {
-    [secretPtr, secretLen] = transferToWasm(secret);
+  if (params.secret !== undefined) {
+    [secretPtr, secretLen] = transferToWasm(params.secret);
   }
 
-  const adLen = ad.length;
+  const adLen = params.ad.length;
   const adPtr = alloc(adLen);
   const adArr = new Uint8Array(memory.buffer, adPtr, adLen);
-  adArr.set(ad);
+  adArr.set(params.ad);
 
   const outPtr = hashRaw(
     pwdPtr,
@@ -111,13 +115,13 @@ export function hash(
     secretLen,
     adPtr,
     adLen,
-    alg,
-    timeCost,
-    memoryCost,
-    lanes,
-    outLen,
-    ver,
+    params.variant,
+    params.m,
+    params.t,
+    params.p,
+    params.outputLength,
+    params.version,
   );
 
-  return new Uint8Array(memory.buffer, outPtr, outLen);
+  return new Uint8Array(memory.buffer, outPtr, params.outputLength);
 }

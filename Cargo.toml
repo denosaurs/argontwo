@@ -14,7 +14,7 @@ path = "wasm/lib.rs"
 
 [dependencies]
 wee_alloc = "0.4.5"
-argon2 = "0.2.0"
+argon2 = { version = "0.2.0", features = [ "password-hash" ] }
 
 [profile.release]
 panic = "abort"

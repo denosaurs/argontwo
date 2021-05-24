@@ -1,7 +1,9 @@
 #![no_std]
 #![feature(core_intrinsics, lang_items, alloc_error_handler)]
 
-use argon2::{Algorithm, Argon2, Version};
+use argon2::Algorithm;
+use argon2::Argon2;
+use argon2::Version;
 
 extern crate alloc;
 extern crate wee_alloc;
@@ -55,10 +57,10 @@ pub unsafe fn hash_raw(
   ad_ptr: *const u8,
   ad_len: usize,
 
-  alg: usize,
-  time_cost: u32,
-  memory_cost: u32,
-  lanes: u32,
+  variant: usize,
+  m: u32,
+  t: u32,
+  p: u32,
   out_len: usize,
   version: usize,
 ) -> *const u8 {
@@ -71,7 +73,7 @@ pub unsafe fn hash_raw(
   };
   let ad = core::slice::from_raw_parts(ad_ptr, ad_len);
 
-  let alg = match alg {
+  let alg = match variant {
     0 => Algorithm::Argon2d,
     1 => Algorithm::Argon2i,
     _ => Algorithm::Argon2id,
@@ -81,8 +83,7 @@ pub unsafe fn hash_raw(
     _ => Version::V0x13,
   };
 
-  let argon2 =
-    Argon2::new(secret, time_cost, memory_cost, lanes, version).unwrap();
+  let argon2 = Argon2::new(secret, t, m, p, version).unwrap();
   let out_ptr = alloc(out_len);
   let out = core::slice::from_raw_parts_mut(out_ptr, out_len);
 
