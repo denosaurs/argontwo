@@ -20,7 +20,7 @@ pub fn panic_handler(info: &core::panic::PanicInfo) -> ! {
   let ptr = msg.as_mut_ptr();
   let len = msg.len();
   unsafe { panic(ptr, len) };
-  
+
   loop {}
 }
 
@@ -81,7 +81,8 @@ pub unsafe fn hash_raw(
     _ => Version::V0x13,
   };
 
-  let argon2 = Argon2::new(secret, time_cost, memory_cost, lanes, version).unwrap();
+  let argon2 =
+    Argon2::new(secret, time_cost, memory_cost, lanes, version).unwrap();
   let out_ptr = alloc(out_len);
   let out = core::slice::from_raw_parts_mut(out_ptr, out_len);
 
