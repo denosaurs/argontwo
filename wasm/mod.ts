@@ -6,6 +6,7 @@ const { instance } = await WebAssembly.instantiate(source, {
       const msg = new TextDecoder().decode(
         new Uint8Array(memory.buffer, ptr, len),
       );
+      dealloc(ptr, len);
       throw new Error(msg);
     },
   },
@@ -18,19 +19,18 @@ export const dealloc = instance.exports.dealloc as (
   size: number,
 ) => void;
 
-export const hashRaw = instance.exports.hash_raw as (
-  pwdPtr: number,
-  pwdLen: number,
+export const hash = instance.exports.hash as (
+  passwordPtr: number,
+  passwordLen: number,
   saltPtr: number,
   saltLen: number,
   secretPtr: number,
   secretLen: number,
-  adPtr: number,
-  adLen: number,
-  variant: number,
-  m: number,
-  t: number,
-  p: number,
-  outLen: number,
+  outputPtr: number,
+  outputLen: number,
+  algorithm: number,
   version: number,
-) => number;
+  mCost: number,
+  tCost: number,
+  pCost: number,
+) => void;

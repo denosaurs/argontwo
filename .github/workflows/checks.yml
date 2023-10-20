@@ -7,10 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Setup latest deno version
-        uses: denolib/setup-deno@v2
+      - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x
 
@@ -24,10 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Setup latest deno version
-        uses: denolib/setup-deno@v2
+      - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x
 

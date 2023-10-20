@@ -4,8 +4,8 @@ description = "argon2 hashing wasm module for deno"
 repository = "https://github.com/denosaurs/argontwo"
 license = "MIT"
 version = "0.1.0"
-authors = ["Elias SJögreen"]
-edition = "2018"
+authors = ["Elias Sjögreen"]
+edition = "2021"
 publish = false
 
 [lib]
@@ -13,10 +13,9 @@ crate-type = ["cdylib"]
 path = "wasm/lib.rs"
 
 [dependencies]
-wee_alloc = "0.4.5"
-argon2 = { version = "0.2.0", features = [ "password-hash" ] }
+argon2 = { version = "0.5.2", features = ["alloc"] }
+talc = "3.1.1"
 
 [profile.release]
-panic = "abort"
-opt-level = 3
+opt-level = "s"
 lto = true
