@@ -1,25 +1,23 @@
 #![no_std]
-#![feature(core_intrinsics, lang_items, alloc_error_handler)]
-
-use argon2::Algorithm;
-use argon2::Argon2;
-use argon2::Version;
+#![feature(core_intrinsics, alloc_error_handler, const_mut_refs, allocator_api)]
 
 extern crate alloc;
-extern crate wee_alloc;
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+use argon2::Argon2;
+
+use talc::*;
+
+#[global_allocator] static TALC: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
 
 extern "C" {
-  fn panic(ptr: *mut u8, len: usize);
+  fn panic(ptr: *const u8, len: usize);
 }
 
 #[panic_handler]
 #[no_mangle]
 pub fn panic_handler(info: &core::panic::PanicInfo) -> ! {
-  let mut msg = alloc::format!("{}", info);
-  let ptr = msg.as_mut_ptr();
+  let msg = alloc::format!("{info}");
+  let ptr = msg.as_ptr();
   let len = msg.len();
   unsafe { panic(ptr, len) };
 
@@ -28,9 +26,10 @@ pub fn panic_handler(info: &core::panic::PanicInfo) -> ! {
 
 #[alloc_error_handler]
 #[no_mangle]
-pub fn oom_handler(layout: core::alloc::Layout) -> ! {
-  panic!("memory allocation of {} bytes failed", layout.size());
+pub fn alloc_error_handler(layout: core::alloc::Layout) -> ! {
+  panic!("Memory allocation of {} bytes failed", layout.size());
 }
+
 
 #[no_mangle]
 pub unsafe fn alloc(size: usize) -> *mut u8 {
@@ -47,47 +46,51 @@ pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
 }
 
 #[no_mangle]
-pub unsafe fn hash_raw(
-  pwd_ptr: *const u8,
-  pwd_len: usize,
+pub unsafe fn hash(
+  password_ptr: *const u8,
+  password_len: usize,
+
   salt_ptr: *const u8,
   salt_len: usize,
+
   secret_ptr: *const u8,
   secret_len: usize,
-  ad_ptr: *const u8,
-  ad_len: usize,
 
-  variant: usize,
-  m: u32,
-  t: u32,
-  p: u32,
-  out_len: usize,
-  version: usize,
-) -> *const u8 {
-  let pwd = core::slice::from_raw_parts(pwd_ptr, pwd_len);
+  output_ptr: *mut u8,
+  output_len: usize,
+
+  algorithm: u32,
+  version: u32,
+
+  m_cost: u32,
+  t_cost: u32,
+  p_cost: u32,
+) {
+  let password = core::slice::from_raw_parts(password_ptr, password_len);
   let salt = core::slice::from_raw_parts(salt_ptr, salt_len);
-  let secret = if secret_len > 0 {
+  let secret = if !secret_ptr.is_null() {
     Some(core::slice::from_raw_parts(secret_ptr, secret_len))
   } else {
     None
   };
-  let ad = core::slice::from_raw_parts(ad_ptr, ad_len);
+  let output = core::slice::from_raw_parts_mut(output_ptr, output_len);
 
-  let alg = match variant {
-    0 => Algorithm::Argon2d,
-    1 => Algorithm::Argon2i,
-    _ => Algorithm::Argon2id,
+  let algorithm = match algorithm {
+    0 => argon2::Algorithm::Argon2d,
+    1 => argon2::Algorithm::Argon2i,
+    2 => argon2::Algorithm::Argon2id,
+    _ => panic!("Invalid algorithm"),
   };
-  let version = match version {
-    0 => Version::V0x10,
-    _ => Version::V0x13,
+  let version = argon2::Version::try_from(version).unwrap();
+  let params = argon2::Params::new(m_cost, t_cost, p_cost, None).unwrap();
+
+  // panic!("{m_cost}");
+
+  let hasher = if let Some(secret) = secret {
+    Argon2::new_with_secret(secret, algorithm, version, params).unwrap()
+  } else {
+    Argon2::new(algorithm, version, params)
   };
 
-  let argon2 = Argon2::new(secret, t, m, p, version).unwrap();
-  let out_ptr = alloc(out_len);
-  let out = core::slice::from_raw_parts_mut(out_ptr, out_len);
-
-  argon2.hash_password_into(alg, pwd, salt, ad, out).unwrap();
-
-  out_ptr
+  hasher.hash_password_into(password, salt, output).unwrap();
 }
