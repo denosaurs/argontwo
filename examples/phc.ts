@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "https://deno.land/std@0.204.0/crypto/timing_safe_equal.ts";
+import { timingSafeEqual } from "@std/crypto";
 import { Buffer } from "node:buffer";
 import phc from "npm:@phc/format";
 import { hash } from "../mod.ts";

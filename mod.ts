@@ -97,7 +97,7 @@ export function hash(
   password: BufferSource,
   salt: BufferSource,
   params?: Argon2Params,
-) {
+): ArrayBuffer {
   params ??= {
     algorithm: "Argon2id",
     version: 0x13,

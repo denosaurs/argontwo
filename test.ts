@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.204.0/assert/mod.ts";
+import { assertEquals } from "jsr:@std/assert@0.221";
 
 import { hash } from "./mod.ts";
 

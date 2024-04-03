@@ -1,0 +1,13 @@
+{
+  "name": "@denosaurs/argontwo",
+  "version": "0.2.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "@std/encoding": "jsr:@std/encoding@0.221",
+    "@std/crypto": "jsr:@std/crypto@0.221",
+    "@denosaurs/lz4": "jsr:@denosaurs/lz4@0.1.4"
+  },
+  "tasks": {
+    "build": "deno run -A scripts/build.ts"
+  }
+}
